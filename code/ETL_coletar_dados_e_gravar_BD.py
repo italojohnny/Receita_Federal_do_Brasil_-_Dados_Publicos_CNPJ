@@ -15,6 +15,30 @@ import wget
 import zipfile
 
 
+def get_engine():
+    user=getEnv('DB_USER')
+    passw=getEnv('DB_PASSWORD')
+    host=getEnv('DB_HOST')
+    port=getEnv('DB_PORT')
+    database=getEnv('DB_NAME')
+
+    return create_engine('postgresql://'+user+':'+passw+'@'+host+':'+port+'/'+database)
+
+
+def sql_execute(statement):
+    user=getEnv('DB_USER')
+    passw=getEnv('DB_PASSWORD')
+    host=getEnv('DB_HOST')
+    port=getEnv('DB_PORT')
+    database=getEnv('DB_NAME')
+
+    conn = psycopg2.connect('dbname='+database+' '+'user='+user+' '+'host='+host+' '+'port='+port+' '+'password='+passw)
+    cur = conn.cursor()
+    cur.execute(statement)
+    conn.commit()
+    conn.close()
+
+
 def makedirs(path):
     '''
     cria path caso seja necessario
@@ -29,6 +53,7 @@ def to_sql(dataframe, **kwargs):
     size = 4096
     total = len(dataframe)
     name = kwargs.get('name')
+    kwargs['con'] = get_engine()
 
     def chunker(df):
         return (df[i:i + size] for i in range(0, len(df), size))
@@ -196,19 +221,6 @@ for i in range(len(Items)):
     else:
         pass
 
-#%%
-# Conectar no banco de dados:
-# Dados da conexão com o BD
-user=getEnv('DB_USER')
-passw=getEnv('DB_PASSWORD')
-host=getEnv('DB_HOST')
-port=getEnv('DB_PORT')
-database=getEnv('DB_NAME')
-
-# Conectar:
-engine = create_engine('postgresql://'+user+':'+passw+'@'+host+':'+port+'/'+database)
-conn = psycopg2.connect('dbname='+database+' '+'user='+user+' '+'host='+host+' '+'port='+port+' '+'password='+passw)
-cur = conn.cursor()
 
 #%%
 # Arquivos de empresa:
@@ -219,9 +231,7 @@ print("""
 #######################
 """)
 
-# Drop table antes do insert
-cur.execute('DROP TABLE IF EXISTS "empresa";')
-conn.commit()
+sql_execute('DROP TABLE IF EXISTS "empresa";')
 
 for e in range(0, len(arquivos_empresa)):
     print('Trabalhando no arquivo: '+arquivos_empresa[e]+' [...]')
@@ -256,7 +266,7 @@ for e in range(0, len(arquivos_empresa)):
 
     # Gravar dados no banco:
     # Empresa
-    to_sql(empresa, name='empresa', con=engine, if_exists='append', index=False)
+    to_sql(empresa, name='empresa', if_exists='append', index=False)
     print('Arquivo ' + arquivos_empresa[e] + ' inserido com sucesso no banco de dados!')
 
 try:
@@ -278,8 +288,7 @@ print("""
 """)
 
 # Drop table antes do insert
-cur.execute('DROP TABLE IF EXISTS "estabelecimento";')
-conn.commit()
+sql_execute('DROP TABLE IF EXISTS "estabelecimento";')
 
 for e in range(0, len(arquivos_estabelecimento)):
     print('Trabalhando no arquivo: '+arquivos_estabelecimento[e]+' [...]')
@@ -338,7 +347,7 @@ for e in range(0, len(arquivos_estabelecimento)):
 
     # Gravar dados no banco:
     # estabelecimento
-    to_sql(estabelecimento, name='estabelecimento', con=engine, if_exists='append', index=False)
+    to_sql(estabelecimento, name='estabelecimento', if_exists='append', index=False)
     print('Arquivo ' + arquivos_estabelecimento[e] + ' inserido com sucesso no banco de dados!')
 
 try:
@@ -360,8 +369,7 @@ print("""
 """)
 
 # Drop table antes do insert
-cur.execute('DROP TABLE IF EXISTS "socios";')
-conn.commit()
+sql_execute('DROP TABLE IF EXISTS "socios";')
 
 for e in range(0, len(arquivos_socios)):
     print('Trabalhando no arquivo: '+arquivos_socios[e]+' [...]')
@@ -400,7 +408,7 @@ for e in range(0, len(arquivos_socios)):
 
     # Gravar dados no banco:
     # socios
-    to_sql(socios, name='socios', con=engine, if_exists='append', index=False)
+    to_sql(socios, name='socios', if_exists='append', index=False)
     print('Arquivo ' + arquivos_socios[e] + ' inserido com sucesso no banco de dados!')
 
 try:
@@ -422,8 +430,7 @@ print("""
 """)
 
 # Drop table antes do insert
-cur.execute('DROP TABLE IF EXISTS "simples";')
-conn.commit()
+sql_execute('DROP TABLE IF EXISTS "simples";')
 
 for e in range(0, len(arquivos_simples)):
     print('Trabalhando no arquivo: '+arquivos_simples[e]+' [...]')
@@ -476,7 +483,7 @@ for e in range(0, len(arquivos_simples)):
 
         # Gravar dados no banco:
         # simples
-        to_sql(simples, name='simples', con=engine, if_exists='append', index=False)
+        to_sql(simples, name='simples', if_exists='append', index=False)
         print('Arquivo ' + arquivos_simples[e] + ' inserido com sucesso no banco de dados! - Parte '+ str(i+1))
 
         try:
@@ -504,8 +511,7 @@ print("""
 """)
 
 # Drop table antes do insert
-cur.execute('DROP TABLE IF EXISTS "cnae";')
-conn.commit()
+sql_execute('DROP TABLE IF EXISTS "cnae";')
 
 for e in range(0, len(arquivos_cnae)):
     print('Trabalhando no arquivo: '+arquivos_cnae[e]+' [...]')
@@ -527,7 +533,7 @@ for e in range(0, len(arquivos_cnae)):
 
     # Gravar dados no banco:
     # cnae
-    to_sql(cnae, name='cnae', con=engine, if_exists='append', index=False)
+    to_sql(cnae, name='cnae', if_exists='append', index=False)
     print('Arquivo ' + arquivos_cnae[e] + ' inserido com sucesso no banco de dados!')
 
 try:
@@ -549,8 +555,7 @@ print("""
 """)
 
 # Drop table antes do insert
-cur.execute('DROP TABLE IF EXISTS "moti";')
-conn.commit()
+sql_execute('DROP TABLE IF EXISTS "moti";')
 
 for e in range(0, len(arquivos_moti)):
     print('Trabalhando no arquivo: '+arquivos_moti[e]+' [...]')
@@ -572,7 +577,7 @@ for e in range(0, len(arquivos_moti)):
 
     # Gravar dados no banco:
     # moti
-    to_sql(moti, name='moti', con=engine, if_exists='append', index=False)
+    to_sql(moti, name='moti', if_exists='append', index=False)
     print('Arquivo ' + arquivos_moti[e] + ' inserido com sucesso no banco de dados!')
 
 try:
@@ -594,8 +599,7 @@ print("""
 """)
 
 # Drop table antes do insert
-cur.execute('DROP TABLE IF EXISTS "munic";')
-conn.commit()
+sql_execute('DROP TABLE IF EXISTS "munic";')
 
 for e in range(0, len(arquivos_munic)):
     print('Trabalhando no arquivo: '+arquivos_munic[e]+' [...]')
@@ -617,7 +621,7 @@ for e in range(0, len(arquivos_munic)):
 
     # Gravar dados no banco:
     # munic
-    to_sql(munic, name='munic', con=engine, if_exists='append', index=False)
+    to_sql(munic, name='munic', if_exists='append', index=False)
     print('Arquivo ' + arquivos_munic[e] + ' inserido com sucesso no banco de dados!')
 
 try:
@@ -639,8 +643,7 @@ print("""
 """)
 
 # Drop table antes do insert
-cur.execute('DROP TABLE IF EXISTS "natju";')
-conn.commit()
+sql_execute('DROP TABLE IF EXISTS "natju";')
 
 for e in range(0, len(arquivos_natju)):
     print('Trabalhando no arquivo: '+arquivos_natju[e]+' [...]')
@@ -662,7 +665,7 @@ for e in range(0, len(arquivos_natju)):
 
     # Gravar dados no banco:
     # natju
-    to_sql(natju, name='natju', con=engine, if_exists='append', index=False)
+    to_sql(natju, name='natju', if_exists='append', index=False)
     print('Arquivo ' + arquivos_natju[e] + ' inserido com sucesso no banco de dados!')
 
 try:
@@ -684,8 +687,7 @@ print("""
 """)
 
 # Drop table antes do insert
-cur.execute('DROP TABLE IF EXISTS "pais";')
-conn.commit()
+sql_execute('DROP TABLE IF EXISTS "pais";')
 
 for e in range(0, len(arquivos_pais)):
     print('Trabalhando no arquivo: '+arquivos_pais[e]+' [...]')
@@ -707,7 +709,7 @@ for e in range(0, len(arquivos_pais)):
 
     # Gravar dados no banco:
     # pais
-    to_sql(pais, name='pais', con=engine, if_exists='append', index=False)
+    to_sql(pais, name='pais', if_exists='append', index=False)
     print('Arquivo ' + arquivos_pais[e] + ' inserido com sucesso no banco de dados!')
 
 try:
@@ -729,8 +731,7 @@ print("""
 """)
 
 # Drop table antes do insert
-cur.execute('DROP TABLE IF EXISTS "quals";')
-conn.commit()
+sql_execute('DROP TABLE IF EXISTS "quals";')
 
 for e in range(0, len(arquivos_quals)):
     print('Trabalhando no arquivo: '+arquivos_quals[e]+' [...]')
@@ -752,7 +753,7 @@ for e in range(0, len(arquivos_quals)):
 
     # Gravar dados no banco:
     # quals
-    to_sql(quals, name='quals', con=engine, if_exists='append', index=False)
+    to_sql(quals, name='quals', if_exists='append', index=False)
     print('Arquivo ' + arquivos_quals[e] + ' inserido com sucesso no banco de dados!')
 
 try:
@@ -792,7 +793,7 @@ print("""
 ## Criar índices na base de dados [...]
 #######################################
 """)
-cur.execute("""
+sql_execute("""
 create index empresa_cnpj on empresa(cnpj_basico);
 commit;
 create index estabelecimento_cnpj on estabelecimento(cnpj_basico);
@@ -802,7 +803,7 @@ commit;
 create index simples_cnpj on simples(cnpj_basico);
 commit;
 """)
-conn.commit()
+
 print("""
 ############################################################
 ## Índices criados nas tabelas, para a coluna `cnpj_basico`:
